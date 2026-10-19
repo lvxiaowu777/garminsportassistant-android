@@ -1,0 +1,99 @@
+package com.garmincoach.app.push
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
+
+/**
+ * 推送管理器 — 获取 FCM Token + 注册到后端。
+ *
+ * 注意：FCM Token 是手机从 Google 拿到的唯一标识，
+ * 后端拿这个 Token 给 Google FCM 发请求，Google 再推到这台手机。
+ */
+class PushManager(private val context: Context) {
+
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences("push_prefs", Context.MODE_PRIVATE)
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .build()
+
+    companion object {
+        private const val TAG = "PushManager"
+        private const val KEY_TOKEN = "fcm_token"
+        private const val KEY_REGISTERED = "token_registered"
+        // 后端注册接口地址
+        private const val REGISTER_URL = "http://localhost:8766/api/push/register"
+    }
+
+    /**
+     * FCM 初始化成功后回调这里。
+     * 如果 FCM 不可用（国内没装 Google 服务的手机），静默降级。
+     */
+    fun initFCM() {
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Log.w(TAG, "FCM token failed — 手机可能没装 Google 服务")
+                    return@addOnCompleteListener
+                }
+                val token = task.result
+                Log.d(TAG, "FCM token: $token")
+                registerToken(token)
+            }
+    }
+
+    /**
+     * 注册/更新 FCM Token 到后端。
+     */
+    fun registerToken(token: String) {
+        val savedToken = prefs.getString(KEY_TOKEN, "")
+        if (token == savedToken) {
+            Log.d(TAG, "Token 没变，跳过注册")
+            return
+        }
+
+        prefs.edit().putString(KEY_TOKEN, token).apply()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val json = JSONObject().apply {
+                    put("token", token)
+                    put("platform", "android")
+                }
+
+                val body = json.toString()
+                    .toRequestBody("application/json".toMediaType())
+
+                val request = Request.Builder()
+                    .url(REGISTER_URL)
+                    .post(body)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    prefs.edit().putBoolean(KEY_REGISTERED, true).apply()
+                    Log.d(TAG, "Token 注册成功")
+                } else {
+                    Log.w(TAG, "Token 注册失败: ${response.code}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Token 注册异常: ${e.message}")
+            }
+        }
+    }
+
+    fun isRegistered(): Boolean = prefs.getBoolean(KEY_REGISTERED, false)
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主主题 — 深色 -->
+    <style name="Theme.GarminCoach" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/accent_dim</item>
+        <item name="colorSecondary">@color/success</item>
+        <item name="android:colorBackground">@color/bg_dark</item>
+        <item name="android:statusBarColor">@color/bg_dark</item>
+        <item name="android:navigationBarColor">@color/bg_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- 闪屏主题 -->
+    <style name="Theme.GarminCoach.Splash" parent="Theme.GarminCoach">
+        <item name="android:windowBackground">@color/splash_bg</item>
+    </style>
+</resources>

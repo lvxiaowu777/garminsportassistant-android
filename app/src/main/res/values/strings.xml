@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Garmin Coach</string>
+    <string name="tab_dashboard">仪表盘</string>
+    <string name="tab_chat">对话</string>
+    <string name="tab_history">记录</string>
+    <string name="channel_training_name">训练提醒</string>
+    <string name="channel_training_desc">训练计划、恢复状态、天气提醒</string>
+    <string name="connecting">连接中…</string>
+    <string name="offline">无法连接到服务</string>
+    <string name="retry">重试</string>
+</resources>

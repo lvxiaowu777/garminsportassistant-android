@@ -1,0 +1,84 @@
+package com.garmincoach.app.push
+
+import android.app.PendingIntent
+import android.content.Intent
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.garmincoach.app.GarminCoachApp
+import com.garmincoach.app.MainActivity
+import com.garmincoach.app.R
+import com.google.firebase.messaging.FirebaseMessagingService
+import com.google.firebase.messaging.RemoteMessage
+
+/**
+ * FCM 消息接收服务。
+ *
+ * 运行在后台，即使 App 没打开也能收到推送。
+ * 收到消息 → 弹出通知栏通知 → 点击跳转到 App。
+ */
+class FCMService : FirebaseMessagingService() {
+
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        Log.d(TAG, "New FCM token: $token")
+        // 注册到后端
+        GarminCoachApp.instance.pushManager.registerToken(token)
+    }
+
+    override fun onMessageReceived(message: RemoteMessage) {
+        super.onMessageReceived(message)
+        Log.d(TAG, "Received message: ${message.messageId}")
+
+        val title = message.notification?.title
+            ?: message.data["title"]
+            ?: "Garmin Coach"
+
+        val body = message.notification?.body
+            ?: message.data["body"]
+            ?: ""
+
+        val clickAction = message.data["click_action"] ?: "dashboard"
+
+        showNotification(title, body, clickAction)
+    }
+
+    /**
+     * 弹出本地通知。
+     */
+    private fun showNotification(title: String, body: String, clickAction: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("tab", clickAction)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            System.currentTimeMillis().toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, GarminCoachApp.CHANNEL_TRAINING)
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: 换成自己的 icon
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(this).notify(
+                System.currentTimeMillis().toInt(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            Log.w(TAG, "No notification permission", e)
+        }
+    }
+
+    companion object {
+        private const val TAG = "FCMService"
+    }
+}

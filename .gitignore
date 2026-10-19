@@ -1,0 +1,35 @@
+# ───────────── Gradle ─────────────
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+local.properties
+
+# ───────────── Android Studio / IntelliJ ─────────────
+*.iml
+.idea/
+captures/
+.externalNativeBuild
+.cxx
+
+# ───────────── 构建产物 ─────────────
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output.json
+
+# ───────────── 签名密钥（绝对不能进版本库）─────────────
+*.jks
+*.keystore
+!debug.keystore
+
+# ───────────── Firebase ─────────────
+# 每个 Firebase 项目各自下载；含项目标识，不进公共仓库
+google-services.json
+*service-account*.json
+
+# ───────────── 系统 ─────────────
+.DS_Store
+Thumbs.db
+desktop.ini
